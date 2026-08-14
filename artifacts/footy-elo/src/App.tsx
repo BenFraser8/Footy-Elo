@@ -43,6 +43,22 @@ function expectedScore(teamRating: number, opponentRating: number) {
   return 1 / (1 + 10 ** ((opponentRating - teamRating) / 400));
 }
 
+function matchProbabilities(homeRating: number, awayRating: number) {
+  const homeExpectedScore = expectedScore(homeRating, awayRating);
+  const drawProbability = Math.max(0.1, 0.28 - Math.abs(homeRating - awayRating) / 2000);
+  const decisiveProbability = 1 - drawProbability;
+  const homeProbability = homeExpectedScore * decisiveProbability;
+  const awayProbability = (1 - homeExpectedScore) * decisiveProbability;
+  const homePercentage = Math.round(homeProbability * 100);
+  const drawPercentage = Math.round(drawProbability * 100);
+
+  return {
+    home: homePercentage,
+    draw: drawPercentage,
+    away: 100 - homePercentage - drawPercentage,
+  };
+}
+
 const teamSeeds: TeamSeed[] = [
   { id: 'bayern', name: 'Bayern Munich', shortName: 'BAY', leagueId: 'bundesliga', startingRating: 1650, form: [], isCore: true },
   { id: 'psg', name: 'Paris Saint-Germain', shortName: 'PSG', leagueId: 'ligue1', startingRating: 1630, form: ['D'], isCore: true },
@@ -128,8 +144,7 @@ function MatchCard({ match, featured = false }: { match: Match; featured?: boole
   const away = teamById[match.awayTeamId];
   const homeRating = match.homeRatingAtKickoff ?? home.rating;
   const awayRating = match.awayRatingAtKickoff ?? away.rating;
-  const homeProbability = Math.round(expectedScore(homeRating, awayRating) * 100);
-  const awayProbability = 100 - homeProbability;
+  const probabilities = matchProbabilities(homeRating, awayRating);
   const league = leagueById[match.leagueId];
   return (
     <article className={`group relative overflow-hidden border border-[hsl(var(--card-border))] bg-[hsl(var(--card))] transition-all duration-300 hover:-translate-y-0.5 hover:border-[hsl(var(--accent)/.5)] hover:shadow-[var(--shadow-md)] ${featured ? 'rounded-xl' : 'rounded-lg'}`} data-testid={`fixture-card-${match.id}`}>
@@ -171,14 +186,18 @@ function MatchCard({ match, featured = false }: { match: Match; featured?: boole
           <TeamMark team={away} compact={!featured} />
         </div>
       </div>
-      <div className="grid grid-cols-2 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/.45)]">
-        <div className="border-r border-[hsl(var(--border))] px-4 py-3 sm:px-6">
-          <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]"><span>Home win</span><span className="font-data text-xs text-[hsl(var(--foreground))]" data-testid={`probability-home-${match.id}`}>{homeProbability}%</span></div>
-          <div className="h-1 overflow-hidden rounded-full bg-[hsl(var(--border))]"><div className="h-full rounded-full bg-[hsl(var(--accent))] transition-all duration-500" style={{ width: `${homeProbability}%` }} /></div>
+      <div className="grid grid-cols-3 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/.45)]">
+        <div className="border-r border-[hsl(var(--border))] px-3 py-3 sm:px-5">
+          <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]"><span>Home win</span><span className="font-data text-xs text-[hsl(var(--foreground))]" data-testid={`probability-home-${match.id}`}>{probabilities.home}%</span></div>
+          <div className="h-1 overflow-hidden rounded-full bg-[hsl(var(--border))]"><div className="h-full rounded-full bg-[hsl(var(--accent))] transition-all duration-500" style={{ width: `${probabilities.home}%` }} /></div>
         </div>
-        <div className="px-4 py-3 sm:px-6">
-          <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))]"><span>Away win</span><span className="font-data text-xs text-[hsl(var(--foreground))]" data-testid={`probability-away-${match.id}`}>{awayProbability}%</span></div>
-          <div className="h-1 overflow-hidden rounded-full bg-[hsl(var(--border))]"><div className="ml-auto h-full rounded-full bg-[hsl(var(--secondary-foreground))] transition-all duration-500" style={{ width: `${awayProbability}%` }} /></div>
+        <div className="border-r border-[hsl(var(--border))] px-3 py-3 sm:px-5">
+          <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]"><span>Draw</span><span className="font-data text-xs text-[hsl(var(--foreground))]" data-testid={`probability-draw-${match.id}`}>{probabilities.draw}%</span></div>
+          <div className="h-1 overflow-hidden rounded-full bg-[hsl(var(--border))]"><div className="h-full rounded-full bg-[hsl(var(--muted-foreground)/.65)] transition-all duration-500" style={{ width: `${probabilities.draw}%` }} /></div>
+        </div>
+        <div className="px-3 py-3 sm:px-5">
+          <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]"><span>Away win</span><span className="font-data text-xs text-[hsl(var(--foreground))]" data-testid={`probability-away-${match.id}`}>{probabilities.away}%</span></div>
+          <div className="h-1 overflow-hidden rounded-full bg-[hsl(var(--border))]"><div className="ml-auto h-full rounded-full bg-[hsl(var(--secondary-foreground))] transition-all duration-500" style={{ width: `${probabilities.away}%` }} /></div>
         </div>
       </div>
       {match.played && <div className="flex items-center justify-between border-t border-[hsl(var(--border))] px-4 py-2.5 font-data text-[10px] text-[hsl(var(--muted-foreground))] sm:px-6" data-testid={`fixture-elo-changes-${match.id}`}><span>Rating change</span><span><strong className={match.homeEloChange !== undefined && match.homeEloChange >= 0 ? 'text-[hsl(var(--secondary-foreground))]' : 'text-[hsl(var(--accent))]'}>{home.shortName} {formatEloChange(match.homeEloChange)}</strong><span className="mx-2 opacity-40">/</span><strong className={match.awayEloChange !== undefined && match.awayEloChange >= 0 ? 'text-[hsl(var(--secondary-foreground))]' : 'text-[hsl(var(--accent))]'}>{away.shortName} {formatEloChange(match.awayEloChange)}</strong></span></div>}
@@ -274,7 +293,7 @@ function Home() {
         </div>
 
         <section id="methodology" className="mt-20 scroll-mt-8 border-t border-[hsl(var(--border))] pt-8 sm:mt-28 sm:pt-10" data-testid="section-methodology">
-          <div className="grid gap-8 sm:grid-cols-[1fr_2fr] sm:items-start"><div><p className="mb-2 font-data text-[10px] uppercase tracking-[.2em] text-[hsl(var(--accent))]">Under the hood</p><h2 className="font-display text-3xl tracking-[-.03em]">A simple model.<br />A useful signal.</h2></div><div className="grid gap-6 sm:grid-cols-2"><div><Shield className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Elo, without the fog</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Every team starts with a rating that moves with results and the quality of the opposition. Higher is stronger. It is deliberately legible.</p></div><div><Sparkles className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Probability, not prophecy</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Match percentages use the standard expected-score formula. They help frame the game; they do not pretend to know its ending.</p></div></div></div>
+          <div className="grid gap-8 sm:grid-cols-[1fr_2fr] sm:items-start"><div><p className="mb-2 font-data text-[10px] uppercase tracking-[.2em] text-[hsl(var(--accent))]">Under the hood</p><h2 className="font-display text-3xl tracking-[-.03em]">A simple model.<br />A useful signal.</h2></div><div className="grid gap-6 sm:grid-cols-2"><div><Shield className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Elo, without the fog</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Every team starts with a rating that moves with results and the quality of the opposition. Higher is stronger. It is deliberately legible.</p></div><div><Sparkles className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Probability, not prophecy</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Three-way percentages combine the standard Elo expected score with a draw estimate that never falls below 10%.</p></div></div></div>
         </section>
       </main>
        <footer className="border-t border-[hsl(var(--border))]"><div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-6 text-[11px] text-[hsl(var(--muted-foreground))] sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12"><span className="font-display text-lg text-[hsl(var(--foreground))]">footy<span className="text-[hsl(var(--accent))]">elo</span></span><span data-testid="text-footer-update">Built for the curious fan · Model snapshot 14 Aug 2026</span><a href="#methodology" className="flex items-center gap-1 font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--accent))]" data-testid="link-footer-methodology">How it works <ArrowUpRight className="h-3.5 w-3.5" /></a></div></footer>
