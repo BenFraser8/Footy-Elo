@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-mono: var(--app-font-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: 38 38% 94%;
+  --foreground: 214 29% 17%;
+  --border: 35 22% 83%;
+  --input: 35 22% 83%;
+  --ring: 7 72% 57%;
+  --card: 40 40% 97%;
+  --card-foreground: 214 29% 17%;
+  --card-border: 35 22% 84%;
+  --primary: 214 29% 17%;
+  --primary-foreground: 38 38% 94%;
+  --secondary: 162 24% 84%;
+  --secondary-foreground: 162 31% 23%;
+  --muted: 35 24% 88%;
+  --muted-foreground: 213 10% 46%;
+  --accent: 7 72% 57%;
+  --accent-foreground: 40 40% 97%;
+  --destructive: 7 72% 57%;
+  --destructive-foreground: 40 40% 97%;
+  --sidebar: 214 29% 17%;
+  --sidebar-foreground: 38 38% 94%;
+  --sidebar-border: 214 20% 27%;
+  --app-font-sans: 'DM Sans', sans-serif;
+  --app-font-serif: 'Fraunces', Georgia, serif;
+  --app-font-mono: 'DM Mono', monospace;
+  --radius: 0.7rem;
+  --shadow-sm: 0 1px 2px hsl(214 29% 17% / 0.04), 0 8px 24px hsl(214 29% 17% / 0.04);
+  --shadow-md: 0 16px 36px hsl(214 29% 17% / 0.09);
+}
+
+.dark {
+  --background: 214 29% 12%;
+  --foreground: 38 38% 94%;
+  --border: 214 20% 27%;
+  --input: 214 20% 27%;
+  --card: 214 25% 16%;
+  --card-foreground: 38 38% 94%;
+  --card-border: 214 20% 27%;
+  --primary: 38 38% 94%;
+  --primary-foreground: 214 29% 17%;
+  --secondary: 162 24% 25%;
+  --secondary-foreground: 162 32% 84%;
+  --muted: 214 20% 22%;
+  --muted-foreground: 35 14% 67%;
+  --accent: 7 72% 57%;
+  --accent-foreground: 40 40% 97%;
+  --destructive: 7 72% 57%;
+  --destructive-foreground: 40 40% 97%;
+  --sidebar: 214 34% 9%;
+  --sidebar-foreground: 38 38% 94%;
+  --sidebar-border: 214 20% 21%;
+  --ring: 7 72% 57%;
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { background: hsl(var(--background)); }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    margin: 0;
+    min-width: 320px;
+  }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible {
+    outline: 2px solid hsl(var(--accent));
+    outline-offset: 3px;
+  }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: .45; transform: scale(.88); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.animate-rise-in { animation: rise-in .55s cubic-bezier(.22, 1, .36, 1) both; }
+.animate-pulse-dot { animation: pulse-dot 2.4s ease-in-out infinite; }
+.font-display { font-family: var(--app-font-serif); }
+.font-data { font-family: var(--app-font-mono); }
+.page-grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .028;
+  z-index: 20;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise-in, .animate-pulse-dot { animation: none; }
+}

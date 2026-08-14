@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Footy Elo"
+description = "A simple public football dashboard showing Elo-rated teams across the top five European leagues and upcoming fixtures with predicted win probabilities calculated from standard Elo ratings."
+version = "1.0.0"
+id = "artifacts/footy-elo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21354
+
+[services.development]
+run = "pnpm --filter @workspace/footy-elo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/footy-elo", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/footy-elo/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21354"
+BASE_PATH = "/"
