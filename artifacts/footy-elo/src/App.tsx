@@ -13,6 +13,7 @@ type Team = {
   isCore: boolean;
 };
 type TeamSeed = Omit<Team, 'rating'>;
+type Competition = 'champions_league' | 'premier_league' | 'bundesliga' | 'la_liga' | 'serie_a' | 'ligue_1' | 'friendly';
 type Match = {
   id: string;
   leagueId: string;
@@ -21,7 +22,7 @@ type Match = {
   kickoff: string;
   kickoffDate: string;
   venue: string;
-  competition?: string;
+  competition: Competition;
   played: boolean;
   homeScore?: number;
   awayScore?: number;
@@ -42,6 +43,26 @@ const leagues: League[] = [
 function expectedScore(teamRating: number, opponentRating: number) {
   return 1 / (1 + 10 ** ((opponentRating - teamRating) / 400));
 }
+
+const K_FACTORS: Record<Competition, number> = {
+  champions_league: 35,
+  premier_league: 30,
+  bundesliga: 30,
+  la_liga: 15,
+  serie_a: 15,
+  ligue_1: 10,
+  friendly: 8,
+};
+
+const competitionLabels: Record<Competition, string> = {
+  champions_league: 'Champions League',
+  premier_league: 'Premier League',
+  bundesliga: 'Bundesliga',
+  la_liga: 'La Liga',
+  serie_a: 'Serie A',
+  ligue_1: 'Ligue 1',
+  friendly: 'Friendly',
+};
 
 function matchProbabilities(homeRating: number, awayRating: number) {
   const homeExpectedScore = expectedScore(homeRating, awayRating);
@@ -75,12 +96,12 @@ const teamSeeds: TeamSeed[] = [
 ];
 
 const rawMatches: Match[] = [
-  { id: 'm1', leagueId: 'laliga', homeTeamId: 'barcelona', awayTeamId: 'nottingham', kickoff: 'Sat 8 Aug 2026', kickoffDate: '2026-08-08', venue: 'Udine', played: true, homeScore: 1, awayScore: 0 },
-  { id: 'm2', leagueId: 'ligue1', homeTeamId: 'manutd', awayTeamId: 'psg', kickoff: 'Sat 8 Aug 2026', kickoffDate: '2026-08-08', venue: 'Gothenburg', played: true, homeScore: 1, awayScore: 1 },
-  { id: 'm3', leagueId: 'bundesliga', homeTeamId: 'arsenal', awayTeamId: 'dortmund', kickoff: 'Sun 9 Aug 2026', kickoffDate: '2026-08-09', venue: 'Emirates Stadium', played: true, homeScore: 2, awayScore: 3 },
-  { id: 'm4', leagueId: 'ligue1', homeTeamId: 'liverpool', awayTeamId: 'monaco', kickoff: 'Sun 9 Aug 2026', kickoffDate: '2026-08-09', venue: 'Anfield', played: true, homeScore: 2, awayScore: 3 },
-  { id: 'm5', leagueId: 'pl', homeTeamId: 'arsenal', awayTeamId: 'mancity', kickoff: 'Sun 16 Aug 2026', kickoffDate: '2026-08-16', venue: 'Cardiff', competition: 'Community Shield', played: false },
-  { id: 'm6', leagueId: 'laliga', homeTeamId: 'realmadrid', awayTeamId: 'fiorentina', kickoff: 'August 2026', kickoffDate: '2026-08-31', venue: 'TBA', played: false },
+  { id: 'm1', leagueId: 'laliga', homeTeamId: 'barcelona', awayTeamId: 'nottingham', kickoff: 'Sat 8 Aug 2026', kickoffDate: '2026-08-08', venue: 'Udine', competition: 'friendly', played: true, homeScore: 1, awayScore: 0 },
+  { id: 'm2', leagueId: 'ligue1', homeTeamId: 'manutd', awayTeamId: 'psg', kickoff: 'Sat 8 Aug 2026', kickoffDate: '2026-08-08', venue: 'Gothenburg', competition: 'friendly', played: true, homeScore: 1, awayScore: 1 },
+  { id: 'm3', leagueId: 'bundesliga', homeTeamId: 'arsenal', awayTeamId: 'dortmund', kickoff: 'Sun 9 Aug 2026', kickoffDate: '2026-08-09', venue: 'Emirates Stadium', competition: 'friendly', played: true, homeScore: 2, awayScore: 3 },
+  { id: 'm4', leagueId: 'ligue1', homeTeamId: 'liverpool', awayTeamId: 'monaco', kickoff: 'Sun 9 Aug 2026', kickoffDate: '2026-08-09', venue: 'Anfield', competition: 'friendly', played: true, homeScore: 2, awayScore: 3 },
+  { id: 'm5', leagueId: 'pl', homeTeamId: 'arsenal', awayTeamId: 'mancity', kickoff: 'Sun 16 Aug 2026', kickoffDate: '2026-08-16', venue: 'Cardiff', competition: 'friendly', played: false },
+  { id: 'm6', leagueId: 'laliga', homeTeamId: 'realmadrid', awayTeamId: 'fiorentina', kickoff: 'August 2026', kickoffDate: '2026-08-31', venue: 'TBA', competition: 'friendly', played: false },
 ];
 
 function applyPlayedResults(seeds: TeamSeed[], fixtures: Match[]) {
@@ -92,7 +113,7 @@ function applyPlayedResults(seeds: TeamSeed[], fixtures: Match[]) {
     const awayRatingAtKickoff = ratings[match.awayTeamId];
     const homeExpected = expectedScore(homeRatingAtKickoff, awayRatingAtKickoff);
     const homeResult = match.homeScore === match.awayScore ? 0.5 : match.homeScore > match.awayScore ? 1 : 0;
-    const homeEloChange = 20 * (homeResult - homeExpected);
+    const homeEloChange = K_FACTORS[match.competition] * (homeResult - homeExpected);
     ratings[match.homeTeamId] += homeEloChange;
     ratings[match.awayTeamId] -= homeEloChange;
 
@@ -152,7 +173,7 @@ function MatchCard({ match, featured = false }: { match: Match; featured?: boole
       <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]" data-testid={`fixture-league-${match.id}`}>
           <span className="flex h-5 w-5 items-center justify-center rounded border border-[hsl(var(--border))] text-[9px] text-[hsl(var(--foreground))]">{league.shortName}</span>
-          <span>{match.competition ?? league.name}</span>
+          <span data-testid={`fixture-competition-${match.id}`}>{competitionLabels[match.competition]}</span>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-medium text-[hsl(var(--muted-foreground))]" data-testid={`fixture-kickoff-${match.id}`}>
           <span className={`rounded-full px-2 py-1 font-data text-[9px] uppercase tracking-[.12em] ${match.played ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]' : 'border border-[hsl(var(--border))]'}`} data-testid={`fixture-status-${match.id}`}>{match.played ? 'Played' : 'Upcoming'}</span>
@@ -200,7 +221,7 @@ function MatchCard({ match, featured = false }: { match: Match; featured?: boole
           <div className="h-1 overflow-hidden rounded-full bg-[hsl(var(--border))]"><div className="ml-auto h-full rounded-full bg-[hsl(var(--secondary-foreground))] transition-all duration-500" style={{ width: `${probabilities.away}%` }} /></div>
         </div>
       </div>
-      {match.played && <div className="flex items-center justify-between border-t border-[hsl(var(--border))] px-4 py-2.5 font-data text-[10px] text-[hsl(var(--muted-foreground))] sm:px-6" data-testid={`fixture-elo-changes-${match.id}`}><span>Rating change</span><span><strong className={match.homeEloChange !== undefined && match.homeEloChange >= 0 ? 'text-[hsl(var(--secondary-foreground))]' : 'text-[hsl(var(--accent))]'}>{home.shortName} {formatEloChange(match.homeEloChange)}</strong><span className="mx-2 opacity-40">/</span><strong className={match.awayEloChange !== undefined && match.awayEloChange >= 0 ? 'text-[hsl(var(--secondary-foreground))]' : 'text-[hsl(var(--accent))]'}>{away.shortName} {formatEloChange(match.awayEloChange)}</strong></span></div>}
+      {match.played && <div className="flex items-center justify-between border-t border-[hsl(var(--border))] px-4 py-2.5 font-data text-[10px] text-[hsl(var(--muted-foreground))] sm:px-6" data-testid={`fixture-elo-changes-${match.id}`}><span>Rating change <span className="opacity-60">· K={K_FACTORS[match.competition]}</span></span><span><strong className={match.homeEloChange !== undefined && match.homeEloChange >= 0 ? 'text-[hsl(var(--secondary-foreground))]' : 'text-[hsl(var(--accent))]'}>{home.shortName} {formatEloChange(match.homeEloChange)}</strong><span className="mx-2 opacity-40">/</span><strong className={match.awayEloChange !== undefined && match.awayEloChange >= 0 ? 'text-[hsl(var(--secondary-foreground))]' : 'text-[hsl(var(--accent))]'}>{away.shortName} {formatEloChange(match.awayEloChange)}</strong></span></div>}
     </article>
   );
 }
@@ -293,7 +314,7 @@ function Home() {
         </div>
 
         <section id="methodology" className="mt-20 scroll-mt-8 border-t border-[hsl(var(--border))] pt-8 sm:mt-28 sm:pt-10" data-testid="section-methodology">
-          <div className="grid gap-8 sm:grid-cols-[1fr_2fr] sm:items-start"><div><p className="mb-2 font-data text-[10px] uppercase tracking-[.2em] text-[hsl(var(--accent))]">Under the hood</p><h2 className="font-display text-3xl tracking-[-.03em]">A simple model.<br />A useful signal.</h2></div><div className="grid gap-6 sm:grid-cols-2"><div><Shield className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Elo, without the fog</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Every team starts with a rating that moves with results and the quality of the opposition. Higher is stronger. It is deliberately legible.</p></div><div><Sparkles className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Probability, not prophecy</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Three-way percentages combine the standard Elo expected score with a draw estimate that never falls below 10%.</p></div></div></div>
+          <div className="grid gap-8 sm:grid-cols-[1fr_2fr] sm:items-start"><div><p className="mb-2 font-data text-[10px] uppercase tracking-[.2em] text-[hsl(var(--accent))]">Under the hood</p><h2 className="font-display text-3xl tracking-[-.03em]">A simple model.<br />A useful signal.</h2></div><div className="grid gap-6 sm:grid-cols-2"><div><Shield className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Elo, without the fog</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Every team starts with a rating that moves with results and the quality of the opposition. Higher is stronger. Competition changes how quickly the rating moves.</p></div><div><Sparkles className="mb-3 h-5 w-5 text-[hsl(var(--accent))]" /><h3 className="text-sm font-semibold">Probability, not prophecy</h3><p className="mt-2 max-w-sm text-sm leading-6 text-[hsl(var(--muted-foreground))]">Three-way percentages combine the standard Elo expected score with a draw estimate that never falls below 10%.</p></div></div></div>
         </section>
       </main>
        <footer className="border-t border-[hsl(var(--border))]"><div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-6 text-[11px] text-[hsl(var(--muted-foreground))] sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12"><span className="font-display text-lg text-[hsl(var(--foreground))]">footy<span className="text-[hsl(var(--accent))]">elo</span></span><span data-testid="text-footer-update">Built for the curious fan · Model snapshot 14 Aug 2026</span><a href="#methodology" className="flex items-center gap-1 font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--accent))]" data-testid="link-footer-methodology">How it works <ArrowUpRight className="h-3.5 w-3.5" /></a></div></footer>
