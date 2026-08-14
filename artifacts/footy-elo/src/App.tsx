@@ -14,6 +14,7 @@ type Team = {
 };
 type TeamSeed = Omit<Team, 'rating'>;
 type Competition = 'champions_league' | 'premier_league' | 'bundesliga' | 'la_liga' | 'serie_a' | 'ligue_1' | 'friendly';
+type TeamLeague = 'Premier League' | 'Bundesliga' | 'La Liga' | 'Serie A' | 'Ligue 1' | 'Other';
 type Match = {
   id: string;
   leagueId: string;
@@ -81,19 +82,142 @@ function matchProbabilities(homeRating: number, awayRating: number) {
 }
 
 const teamSeeds: TeamSeed[] = [
-  { id: 'bayern', name: 'Bayern Munich', shortName: 'BAY', leagueId: 'bundesliga', startingRating: 1650, form: [], isCore: true },
-  { id: 'psg', name: 'Paris Saint-Germain', shortName: 'PSG', leagueId: 'ligue1', startingRating: 1630, form: ['D'], isCore: true },
-  { id: 'arsenal', name: 'Arsenal', shortName: 'ARS', leagueId: 'pl', startingRating: 1610, form: ['L'], isCore: true },
-  { id: 'mancity', name: 'Manchester City', shortName: 'MCI', leagueId: 'pl', startingRating: 1590, form: [], isCore: true },
-  { id: 'barcelona', name: 'Barcelona', shortName: 'BAR', leagueId: 'laliga', startingRating: 1570, form: ['W'], isCore: true },
-  { id: 'dortmund', name: 'Borussia Dortmund', shortName: 'BVB', leagueId: 'bundesliga', startingRating: 1550, form: ['W'], isCore: true },
-  { id: 'realmadrid', name: 'Real Madrid', shortName: 'RMA', leagueId: 'laliga', startingRating: 1530, form: [], isCore: true },
-  { id: 'liverpool', name: 'Liverpool', shortName: 'LIV', leagueId: 'pl', startingRating: 1510, form: ['L'], isCore: true },
-  { id: 'nottingham', name: 'Nottingham Forest', shortName: 'NFO', leagueId: 'pl', startingRating: 1500, form: ['L'], isCore: false },
-  { id: 'monaco', name: 'AS Monaco', shortName: 'ASM', leagueId: 'ligue1', startingRating: 1500, form: ['W'], isCore: false },
-  { id: 'manutd', name: 'Manchester United', shortName: 'MUN', leagueId: 'pl', startingRating: 1500, form: ['D'], isCore: false },
-  { id: 'fiorentina', name: 'Fiorentina', shortName: 'FIO', leagueId: 'seriea', startingRating: 1500, form: [], isCore: false },
+  { id: 'bayern', name: 'Bayern Munich', shortName: 'BAY', league: 'Bundesliga', leagueId: 'bundesliga', startingRating: 1650, form: [], isCore: true },
+  { id: 'psg', name: 'Paris Saint-Germain', shortName: 'PSG', league: 'Ligue 1', leagueId: 'ligue1', startingRating: 1630, form: ['D'], isCore: true },
+  { id: 'arsenal', name: 'Arsenal', shortName: 'ARS', league: 'Premier League', leagueId: 'pl', startingRating: 1610, form: ['L'], isCore: true },
+  { id: 'mancity', name: 'Manchester City', shortName: 'MCI', league: 'Premier League', leagueId: 'pl', startingRating: 1590, form: [], isCore: true },
+  { id: 'barcelona', name: 'Barcelona', shortName: 'BAR', league: 'La Liga', leagueId: 'laliga', startingRating: 1570, form: ['W'], isCore: true },
+  { id: 'dortmund', name: 'Borussia Dortmund', shortName: 'BVB', league: 'Bundesliga', leagueId: 'bundesliga', startingRating: 1550, form: ['W'], isCore: true },
+  { id: 'realmadrid', name: 'Real Madrid', shortName: 'RMA', league: 'La Liga', leagueId: 'laliga', startingRating: 1530, form: [], isCore: true },
+  { id: 'liverpool', name: 'Liverpool', shortName: 'LIV', league: 'Premier League', leagueId: 'pl', startingRating: 1510, form: ['L'], isCore: true },
+  { id: 'nottingham', name: 'Nottingham Forest', shortName: 'NFO', league: 'Premier League', leagueId: 'pl', startingRating: 1500, form: ['L'], isCore: false },
+  { id: 'monaco', name: 'AS Monaco', shortName: 'ASM', league: 'Ligue 1', leagueId: 'ligue1', startingRating: 1500, form: ['W'], isCore: false },
+  { id: 'manutd', name: 'Manchester United', shortName: 'MUN', league: 'Premier League', leagueId: 'pl', startingRating: 1500, form: ['D'], isCore: false },
+  { id: 'fiorentina', name: 'Fiorentina', shortName: 'FIO', league: 'Serie A', leagueId: 'seriea', startingRating: 1500, form: [], isCore: false },
 ];
+
+type RankedTeamEntry = { id: string; name: string; shortName: string; rating: number };
+
+function makeRankedTeamSeeds(leagueId: string, league: TeamLeague, entries: RankedTeamEntry[]): TeamSeed[] {
+  return entries.map((entry) => ({
+    ...entry,
+    league,
+    leagueId,
+    startingRating: entry.rating,
+    form: [],
+    isCore: false,
+  }));
+}
+
+const additionalTeamSeeds: TeamSeed[] = [
+  ...makeRankedTeamSeeds('pl', 'Premier League', [
+    { id: 'chelsea', name: 'Chelsea', shortName: 'CHE', rating: 1620 },
+    { id: 'tottenham', name: 'Tottenham Hotspur', shortName: 'TOT', rating: 1605 },
+    { id: 'newcastle', name: 'Newcastle United', shortName: 'NEW', rating: 1580 },
+    { id: 'astonvilla', name: 'Aston Villa', shortName: 'AVL', rating: 1560 },
+    { id: 'westham', name: 'West Ham United', shortName: 'WHU', rating: 1540 },
+    { id: 'brighton', name: 'Brighton', shortName: 'BRI', rating: 1525 },
+    { id: 'crystalpalace', name: 'Crystal Palace', shortName: 'CRY', rating: 1515 },
+    { id: 'everton', name: 'Everton', shortName: 'EVE', rating: 1505 },
+    { id: 'fulham', name: 'Fulham', shortName: 'FUL', rating: 1495 },
+    { id: 'brentford', name: 'Brentford', shortName: 'BRE', rating: 1485 },
+    { id: 'wolves', name: 'Wolverhampton Wanderers', shortName: 'WOL', rating: 1475 },
+    { id: 'bournemouth', name: 'Bournemouth', shortName: 'BOU', rating: 1465 },
+    { id: 'leicester', name: 'Leicester City', shortName: 'LEI', rating: 1455 },
+    { id: 'leeds', name: 'Leeds United', shortName: 'LEE', rating: 1445 },
+    { id: 'southampton', name: 'Southampton', shortName: 'SOU', rating: 1435 },
+  ]),
+  ...makeRankedTeamSeeds('laliga', 'La Liga', [
+    { id: 'atletico', name: 'Atlético Madrid', shortName: 'ATM', rating: 1600 },
+    { id: 'athletic', name: 'Athletic Club', shortName: 'ATH', rating: 1585 },
+    { id: 'villarreal', name: 'Villarreal', shortName: 'VIL', rating: 1565 },
+    { id: 'realbetis', name: 'Real Betis', shortName: 'BET', rating: 1555 },
+    { id: 'realsociedad', name: 'Real Sociedad', shortName: 'RSO', rating: 1545 },
+    { id: 'sevilla', name: 'Sevilla', shortName: 'SEV', rating: 1535 },
+    { id: 'valencia', name: 'Valencia', shortName: 'VAL', rating: 1525 },
+    { id: 'girona', name: 'Girona', shortName: 'GIR', rating: 1515 },
+    { id: 'celtavigo', name: 'Celta Vigo', shortName: 'CEL', rating: 1505 },
+    { id: 'osasuna', name: 'Osasuna', shortName: 'OSA', rating: 1495 },
+    { id: 'mallorca', name: 'Mallorca', shortName: 'MAL', rating: 1485 },
+    { id: 'getafe', name: 'Getafe', shortName: 'GET', rating: 1475 },
+    { id: 'rayo', name: 'Rayo Vallecano', shortName: 'RAY', rating: 1465 },
+    { id: 'alaves', name: 'Alavés', shortName: 'ALA', rating: 1455 },
+    { id: 'espanyol', name: 'Espanyol', shortName: 'ESP', rating: 1445 },
+    { id: 'laspalmas', name: 'Las Palmas', shortName: 'LPA', rating: 1435 },
+    { id: 'valladolid', name: 'Valladolid', shortName: 'VLL', rating: 1425 },
+    { id: 'elche', name: 'Elche', shortName: 'ELC', rating: 1415 },
+  ]),
+  ...makeRankedTeamSeeds('bundesliga', 'Bundesliga', [
+    { id: 'leverkusen', name: 'Bayer Leverkusen', shortName: 'LEV', rating: 1620 },
+    { id: 'leipzig', name: 'RB Leipzig', shortName: 'RBL', rating: 1595 },
+    { id: 'frankfurt', name: 'Eintracht Frankfurt', shortName: 'SGE', rating: 1575 },
+    { id: 'stuttgart', name: 'VfB Stuttgart', shortName: 'VFB', rating: 1565 },
+    { id: 'freiburg', name: 'SC Freiburg', shortName: 'SCF', rating: 1545 },
+    { id: 'unionberlin', name: 'Union Berlin', shortName: 'FCU', rating: 1535 },
+    { id: 'gladbach', name: 'Borussia Mönchengladbach', shortName: 'BMG', rating: 1525 },
+    { id: 'wolfsburg', name: 'Wolfsburg', shortName: 'WOB', rating: 1515 },
+    { id: 'mainz', name: 'Mainz 05', shortName: 'M05', rating: 1505 },
+    { id: 'augsburg', name: 'Augsburg', shortName: 'FCA', rating: 1495 },
+    { id: 'werder', name: 'Werder Bremen', shortName: 'SVW', rating: 1485 },
+    { id: 'hoffenheim', name: 'Hoffenheim', shortName: 'TSG', rating: 1475 },
+    { id: 'heidenheim', name: 'Heidenheim', shortName: 'HDH', rating: 1465 },
+    { id: 'cologne', name: 'Cologne', shortName: 'KOE', rating: 1455 },
+    { id: 'hamburg', name: 'Hamburg', shortName: 'HSV', rating: 1445 },
+    { id: 'stpauli', name: 'St. Pauli', shortName: 'STP', rating: 1435 },
+    { id: 'bochum', name: 'Bochum', shortName: 'BOC', rating: 1425 },
+    { id: 'kiel', name: 'Holstein Kiel', shortName: 'KIE', rating: 1415 },
+  ]),
+  ...makeRankedTeamSeeds('seriea', 'Serie A', [
+    { id: 'inter', name: 'Inter Milan', shortName: 'INT', rating: 1610 },
+    { id: 'napoli', name: 'Napoli', shortName: 'NAP', rating: 1595 },
+    { id: 'juventus', name: 'Juventus', shortName: 'JUV', rating: 1585 },
+    { id: 'milan', name: 'AC Milan', shortName: 'MIL', rating: 1575 },
+    { id: 'roma', name: 'Roma', shortName: 'ROM', rating: 1560 },
+    { id: 'lazio', name: 'Lazio', shortName: 'LAZ', rating: 1545 },
+    { id: 'atalanta', name: 'Atalanta', shortName: 'ATA', rating: 1535 },
+    { id: 'bologna', name: 'Bologna', shortName: 'BOL', rating: 1525 },
+    { id: 'torino', name: 'Torino', shortName: 'TOR', rating: 1515 },
+    { id: 'genoa', name: 'Genoa', shortName: 'GEN', rating: 1505 },
+    { id: 'udinese', name: 'Udinese', shortName: 'UDI', rating: 1495 },
+    { id: 'sassuolo', name: 'Sassuolo', shortName: 'SAS', rating: 1485 },
+    { id: 'parma', name: 'Parma', shortName: 'PAR', rating: 1475 },
+    { id: 'cagliari', name: 'Cagliari', shortName: 'CAG', rating: 1465 },
+    { id: 'lecce', name: 'Lecce', shortName: 'LEC', rating: 1455 },
+    { id: 'como', name: 'Como', shortName: 'COM', rating: 1445 },
+    { id: 'verona', name: 'Hellas Verona', shortName: 'VER', rating: 1435 },
+    { id: 'monza', name: 'Monza', shortName: 'MON', rating: 1425 },
+    { id: 'pisa', name: 'Pisa', shortName: 'PIS', rating: 1415 },
+  ]),
+  ...makeRankedTeamSeeds('ligue1', 'Ligue 1', [
+    { id: 'marseille', name: 'Marseille', shortName: 'OM', rating: 1615 },
+    { id: 'lyon', name: 'Lyon', shortName: 'OL', rating: 1600 },
+    { id: 'lille', name: 'Lille', shortName: 'LOSC', rating: 1580 },
+    { id: 'nice', name: 'Nice', shortName: 'OGC', rating: 1565 },
+    { id: 'rennes', name: 'Rennes', shortName: 'REN', rating: 1550 },
+    { id: 'lens', name: 'Lens', shortName: 'RCL', rating: 1535 },
+    { id: 'nantes', name: 'Nantes', shortName: 'NAN', rating: 1525 },
+    { id: 'strasbourg', name: 'Strasbourg', shortName: 'RCS', rating: 1515 },
+    { id: 'montpellier', name: 'Montpellier', shortName: 'MPL', rating: 1505 },
+    { id: 'toulouse', name: 'Toulouse', shortName: 'TFC', rating: 1495 },
+    { id: 'brest', name: 'Brest', shortName: 'SBR', rating: 1485 },
+    { id: 'reims', name: 'Reims', shortName: 'SDR', rating: 1475 },
+    { id: 'auxerre', name: 'Auxerre', shortName: 'AJA', rating: 1465 },
+    { id: 'saintetienne', name: 'Saint-Étienne', shortName: 'ASSE', rating: 1455 },
+    { id: 'lehavre', name: 'Le Havre', shortName: 'HAC', rating: 1445 },
+    { id: 'metz', name: 'Metz', shortName: 'FCM', rating: 1435 },
+    { id: 'lorient', name: 'Lorient', shortName: 'FCL', rating: 1425 },
+    { id: 'angers', name: 'Angers', shortName: 'SCO', rating: 1415 },
+  ]),
+  ...makeRankedTeamSeeds('other', 'Other', [
+    { id: 'ajax', name: 'Ajax', shortName: 'AJA', rating: 1540 },
+    { id: 'benfica', name: 'Benfica', shortName: 'SLB', rating: 1530 },
+    { id: 'porto', name: 'Porto', shortName: 'FCP', rating: 1520 },
+    { id: 'celtic', name: 'Celtic', shortName: 'CEL', rating: 1510 },
+    { id: 'galatasaray', name: 'Galatasaray', shortName: 'GAL', rating: 1500 },
+  ]),
+];
+
+const allTeamSeeds = [...teamSeeds, ...additionalTeamSeeds];
 
 const rawMatches: Match[] = [
   { id: 'm1', leagueId: 'laliga', homeTeamId: 'barcelona', awayTeamId: 'nottingham', kickoff: 'Sat 8 Aug 2026', kickoffDate: '2026-08-08', venue: 'Udine', competition: 'friendly', played: true, homeScore: 1, awayScore: 0 },
@@ -132,7 +256,7 @@ function applyPlayedResults(seeds: TeamSeed[], fixtures: Match[]) {
   };
 }
 
-const { teams, matches } = applyPlayedResults(teamSeeds, rawMatches);
+const { teams, matches } = applyPlayedResults(allTeamSeeds, rawMatches);
 const coreTeams = teams.filter((team) => team.isCore);
 const teamById = Object.fromEntries(teams.map((team) => [team.id, team])) as Record<string, Team>;
 const leagueById = Object.fromEntries(leagues.map((league) => [league.id, league])) as Record<string, League>;
