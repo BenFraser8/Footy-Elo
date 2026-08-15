@@ -66,6 +66,15 @@ const K_FACTORS: Record<Competition, number> = {
   friendly: 8,
 };
 
+const LEAGUE_ELO_ADJUSTMENTS: Record<TeamLeague, number> = {
+  'Premier League': 30,
+  Bundesliga: 30,
+  'La Liga': 0,
+  'Serie A': 0,
+  'Ligue 1': -40,
+  Other: 0,
+};
+
 const competitionLabels: Record<Competition, string> = {
   champions_league: 'Champions League',
   premier_league: 'Premier League',
@@ -267,7 +276,11 @@ function applyPlayedResults(seeds: TeamSeed[], fixtures: Match[]) {
   };
 }
 
-const { teams, matches } = applyPlayedResults(allTeamSeeds, rawMatches);
+const { teams: matchAdjustedTeams, matches } = applyPlayedResults(allTeamSeeds, rawMatches);
+const teams = matchAdjustedTeams.map((team) => ({
+  ...team,
+  rating: team.rating + LEAGUE_ELO_ADJUSTMENTS[team.league],
+}));
 const coreTeams = teams.filter((team) => team.isCore);
 const teamById = Object.fromEntries(teams.map((team) => [team.id, team])) as Record<string, Team>;
 const rankingLeagues: League[] = [...leagues, { id: 'other', name: 'Other', shortName: 'OTH', country: 'Outside top five' }];
@@ -513,7 +526,7 @@ function Rankings() {
             )}
           </div>
           {rankedTeams.length === 0 ? <div className="rounded-xl border border-dashed border-[hsl(var(--border))] px-6 py-14 text-center text-sm text-[hsl(var(--muted-foreground))]" data-testid="empty-full-rankings">No teams to rank here.</div> : <RankingsTable rankedTeams={rankedTeams} />}
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]" data-testid="rankings-page-note"><LineChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> Ratings are ordered highest to lowest. Match results are applied chronologically using each competition's K-factor.</div>
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]" data-testid="rankings-page-note"><LineChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> Ratings are ordered highest to lowest. Match results are applied chronologically, then a one-time league adjustment is applied: Premier League +30, Bundesliga +30, Ligue 1 −40.</div>
         </section>
       </main>
 
