@@ -6,6 +6,7 @@ type Team = {
   id: string;
   name: string;
   shortName: string;
+  league: TeamLeague;
   leagueId: string;
   startingRating: number;
   rating: number;
@@ -259,7 +260,8 @@ function applyPlayedResults(seeds: TeamSeed[], fixtures: Match[]) {
 const { teams, matches } = applyPlayedResults(allTeamSeeds, rawMatches);
 const coreTeams = teams.filter((team) => team.isCore);
 const teamById = Object.fromEntries(teams.map((team) => [team.id, team])) as Record<string, Team>;
-const leagueById = Object.fromEntries(leagues.map((league) => [league.id, league])) as Record<string, League>;
+const rankingLeagues: League[] = [...leagues, { id: 'other', name: 'Other', shortName: 'OTH', country: 'Outside top five' }];
+const leagueById = Object.fromEntries(rankingLeagues.map((league) => [league.id, league])) as Record<string, League>;
 
 function TeamMark({ team, compact = false }: { team: Team; compact?: boolean }) {
   return (
@@ -370,6 +372,110 @@ function RankingRow({ team, rank }: { team: Team; rank: number }) {
   );
 }
 
+function RankingsTable({ rankedTeams }: { rankedTeams: Team[] }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card)/.58)]" data-testid="table-rankings">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] border-collapse text-left">
+          <thead>
+            <tr className="border-b border-[hsl(var(--border))] text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">
+              <th scope="col" className="w-20 px-4 py-3 text-center sm:px-6">Rank</th>
+              <th scope="col" className="px-4 py-3 sm:px-6">Team</th>
+              <th scope="col" className="px-4 py-3 sm:px-6">League</th>
+              <th scope="col" className="px-4 py-3 text-right sm:px-6">Elo rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rankedTeams.map((team, index) => (
+              <tr key={team.id} className="border-b border-[hsl(var(--border))] last:border-b-0" data-testid={`rankings-table-row-${team.id}`}>
+                <td className={`px-4 py-4 text-center font-data text-sm ${index < 3 ? 'text-[hsl(var(--accent))]' : 'text-[hsl(var(--muted-foreground))]'} sm:px-6`} data-testid={`rankings-table-position-${team.id}`}>
+                  {index + 1}
+                </td>
+                <td className="px-4 py-4 sm:px-6">
+                  <div className="flex items-center gap-3">
+                    <TeamMark team={team} compact />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{team.name}</p>
+                      <p className="mt-1 font-data text-[10px] text-[hsl(var(--muted-foreground))]">{team.shortName}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-sm text-[hsl(var(--muted-foreground))]">{team.league}</td>
+                <td className="px-4 py-4 text-right font-data text-base font-medium sm:px-6" data-testid={`rankings-table-rating-${team.id}`}>
+                  {Math.round(team.rating)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Rankings() {
+  const [view, setView] = useState<'league' | 'overall'>('league');
+  const [selectedLeague, setSelectedLeague] = useState('pl');
+  const rankedTeams = useMemo(() => {
+    const eligibleTeams = view === 'league'
+      ? teams.filter((team) => team.leagueId === selectedLeague)
+      : teams;
+    return [...eligibleTeams].sort((a, b) => b.rating - a.rating).slice(0, view === 'league' ? 20 : 50);
+  }, [selectedLeague, view]);
+  const selectedLeagueName = leagueById[selectedLeague]?.name ?? 'Selected league';
+
+  return (
+    <div className="page-grain min-h-[100dvh] bg-[hsl(var(--background))]">
+      <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/.92)] backdrop-blur-md">
+        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          <a href="/" className="flex items-center gap-3" data-testid="rankings-link-home">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><BarChart3 className="h-4.5 w-4.5" /></span>
+            <span><span className="block font-display text-xl leading-none tracking-[-.03em]">footy<span className="text-[hsl(var(--accent))]">elo</span></span><span className="mt-1 block font-data text-[8px] uppercase tracking-[.2em] text-[hsl(var(--muted-foreground))]">European football index</span></span>
+          </a>
+          <nav className="flex items-center gap-5 sm:gap-7" aria-label="Primary navigation">
+            <a href="/" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="rankings-link-dashboard">Dashboard</a>
+            <a href="/rankings" className="text-xs font-semibold text-[hsl(var(--foreground))]" aria-current="page" data-testid="rankings-link-current">Rankings</a>
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-[1440px] px-5 pb-16 sm:px-8 lg:px-12">
+        <section className="max-w-3xl py-12 sm:py-16 lg:py-20">
+          <div className="mb-5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--accent))]"><Trophy className="h-3.5 w-3.5" /> The index</div>
+          <h1 className="font-display text-5xl leading-[.96] tracking-[-.045em] sm:text-7xl" data-testid="heading-rankings">Every team,<br /><span className="text-[hsl(var(--accent))]">put in order.</span></h1>
+          <p className="mt-7 max-w-2xl text-base leading-7 text-[hsl(var(--muted-foreground))] sm:text-lg">Explore the final Elo ratings across the full Footy Elo team index. Switch between a league table and the global leaderboard.</p>
+        </section>
+
+        <div className="mb-8 flex flex-wrap gap-2 border-b border-[hsl(var(--border))] pb-4" role="tablist" aria-label="Ranking views">
+          <button type="button" role="tab" aria-selected={view === 'league'} onClick={() => setView('league')} className={`rounded-full px-4 py-2.5 text-xs font-semibold transition-colors ${view === 'league' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]'}`} data-testid="button-rankings-by-league">Top 20 by League</button>
+          <button type="button" role="tab" aria-selected={view === 'overall'} onClick={() => setView('overall')} className={`rounded-full px-4 py-2.5 text-xs font-semibold transition-colors ${view === 'overall' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]'}`} data-testid="button-rankings-overall">Top 50 Overall</button>
+        </div>
+
+        <section aria-labelledby="rankings-table-heading" data-testid="section-full-rankings">
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 font-data text-[10px] uppercase tracking-[.2em] text-[hsl(var(--accent))]">{view === 'league' ? 'League leaderboard' : 'Global leaderboard'}</p>
+              <h2 id="rankings-table-heading" className="font-display text-3xl tracking-[-.035em] sm:text-4xl">{view === 'league' ? `Top 20 · ${selectedLeagueName}` : 'Top 50 overall'}</h2>
+            </div>
+            {view === 'league' && (
+              <label className="flex items-center gap-3 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                <span>League</span>
+                <select value={selectedLeague} onChange={(event) => setSelectedLeague(event.target.value)} className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-xs font-semibold text-[hsl(var(--foreground))] outline-none transition-colors focus:border-[hsl(var(--accent))]" aria-label="Select league" data-testid="select-ranking-league">
+                  {rankingLeagues.map((league) => <option key={league.id} value={league.id}>{league.name}</option>)}
+                </select>
+              </label>
+            )}
+          </div>
+          {rankedTeams.length === 0 ? <div className="rounded-xl border border-dashed border-[hsl(var(--border))] px-6 py-14 text-center text-sm text-[hsl(var(--muted-foreground))]" data-testid="empty-full-rankings">No teams to rank here.</div> : <RankingsTable rankedTeams={rankedTeams} />}
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]" data-testid="rankings-page-note"><LineChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> Ratings are ordered highest to lowest. Match results are applied chronologically using each competition's K-factor.</div>
+        </section>
+      </main>
+
+      <footer className="border-t border-[hsl(var(--border))]"><div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-6 text-[11px] text-[hsl(var(--muted-foreground))] sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12"><span className="font-display text-lg text-[hsl(var(--foreground))]">footy<span className="text-[hsl(var(--accent))]">elo</span></span><span>Built for the curious fan · Model snapshot 14 Aug 2026</span><a href="/" className="flex items-center gap-1 font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--accent))]" data-testid="rankings-link-footer-dashboard">Back to dashboard <ArrowUpRight className="h-3.5 w-3.5" /></a></div></footer>
+    </div>
+  );
+}
+
 function Home() {
   const [activeLeague, setActiveLeague] = useState('all');
   const [showAllFixtures, setShowAllFixtures] = useState(false);
@@ -388,14 +494,14 @@ function Home() {
           </a>
           <nav className="hidden items-center gap-7 md:flex" aria-label="Primary navigation">
             <a href="#fixtures" className="text-xs font-semibold text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--accent))]" data-testid="link-fixtures">Fixtures</a>
-            <a href="#rankings" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="link-rankings">Rankings</a>
+            <a href="/rankings" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="link-rankings">Rankings</a>
             <a href="#methodology" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="link-methodology">Methodology</a>
           </nav>
           <button type="button" className="rounded-md p-2 md:hidden" onClick={() => setMobileNavOpen((value) => !value)} aria-label="Toggle navigation" data-testid="button-toggle-navigation">
             {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-        {mobileNavOpen && <nav className="border-t border-[hsl(var(--border))] px-5 py-3 md:hidden" aria-label="Mobile navigation"><div className="flex gap-5"><a href="#fixtures" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold" data-testid="mobile-link-fixtures">Fixtures</a><a href="#rankings" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-rankings">Rankings</a><a href="#methodology" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-methodology">Methodology</a></div></nav>}
+         {mobileNavOpen && <nav className="border-t border-[hsl(var(--border))] px-5 py-3 md:hidden" aria-label="Mobile navigation"><div className="flex gap-5"><a href="#fixtures" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold" data-testid="mobile-link-fixtures">Fixtures</a><a href="/rankings" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-rankings">Rankings</a><a href="#methodology" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-methodology">Methodology</a></div></nav>}
       </header>
 
       <main className="mx-auto max-w-[1440px] px-5 pb-16 sm:px-8 lg:px-12">
@@ -407,7 +513,7 @@ function Home() {
           </div>
           <div className="animate-rise-in rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card)/.7)] p-5 [animation-delay:120ms] sm:p-6" data-testid="card-model-status">
             <div className="flex items-center justify-between border-b border-[hsl(var(--border))] pb-4"><div className="flex items-center gap-2 text-xs font-semibold"><Radio className="h-3.5 w-3.5 text-[hsl(var(--accent))]" /> Model status</div><span className="rounded-full bg-[hsl(var(--secondary))] px-2 py-1 font-data text-[9px] font-medium uppercase tracking-[.12em] text-[hsl(var(--secondary-foreground))]" data-testid="status-model-live">Live</span></div>
-             <div className="grid grid-cols-2 gap-4 pt-5"><div><p className="font-data text-3xl tracking-[-.06em]" data-testid="text-team-count">{coreTeams.length}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">teams indexed</p></div><div><p className="font-data text-3xl tracking-[-.06em]" data-testid="text-fixture-count">{matches.length}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">fixtures tracked</p></div></div>
+              <div className="grid grid-cols-2 gap-4 pt-5"><div><p className="font-data text-3xl tracking-[-.06em]" data-testid="text-team-count">{teams.length}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">teams indexed</p></div><div><p className="font-data text-3xl tracking-[-.06em]" data-testid="text-fixture-count">{matches.length}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">fixtures tracked</p></div></div>
             <div className="mt-6 flex items-start gap-2 border-t border-[hsl(var(--border))] pt-4 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> Ratings are refreshed after every result. Percentages are model probabilities, not predictions of certainty.</div>
           </div>
         </section>
@@ -433,7 +539,7 @@ function Home() {
               <div className="flex items-center justify-between border-b border-[hsl(var(--border))] py-3 text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]"><span>{activeLeague === 'all' ? 'Across all leagues' : leagueById[activeLeague].name}</span><span>Rating</span></div>
               {filteredTeams.length === 0 ? <div className="py-12 text-center text-sm text-[hsl(var(--muted-foreground))]" data-testid="empty-rankings">No teams to rank here.</div> : filteredTeams.map((team, index) => <RankingRow key={team.id} team={team} rank={index + 1} />)}
             </div>
-             <div className="mt-4 flex items-start gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]" data-testid="ranking-note"><LineChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> The index follows the eight requested starting ratings. Other fixture opponents are tracked from 1500 until a rating is provided.</div>
+              <div className="mt-4 flex items-start gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]" data-testid="ranking-note"><LineChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> The index combines seeded league ratings with the latest completed fixture results.</div>
           </aside>
         </div>
 
@@ -447,5 +553,5 @@ function Home() {
 }
 
 export default function App() {
-  return <Home />;
+  return window.location.pathname === '/rankings' ? <Rankings /> : <Home />;
 }
