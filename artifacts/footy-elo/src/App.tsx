@@ -14,6 +14,16 @@ type Team = {
   isCore: boolean;
 };
 type TeamSeed = Omit<Team, 'rating'>;
+type Player = {
+  id: string;
+  name: string;
+  team_id: string;
+  goals: number;
+  assists: number;
+  appearances: number;
+  trophies_count: number;
+  player_elo: number;
+};
 type Competition = 'champions_league' | 'premier_league' | 'bundesliga' | 'la_liga' | 'serie_a' | 'ligue_1' | 'friendly';
 type TeamLeague = 'Premier League' | 'Bundesliga' | 'La Liga' | 'Serie A' | 'Ligue 1' | 'Other';
 type Match = {
@@ -263,6 +273,42 @@ const teamById = Object.fromEntries(teams.map((team) => [team.id, team])) as Rec
 const rankingLeagues: League[] = [...leagues, { id: 'other', name: 'Other', shortName: 'OTH', country: 'Outside top five' }];
 const leagueById = Object.fromEntries(rankingLeagues.map((league) => [league.id, league])) as Record<string, League>;
 
+function calculatePlayerElo(goals: number, assists: number, trophiesCount: number, appearances: number) {
+  return 1500 + (goals * 8) + (assists * 5) + (trophiesCount * 15) + (appearances * 0.5);
+}
+
+function makePlayer(
+  id: string,
+  name: string,
+  team_id: string,
+  goals: number,
+  assists: number,
+  appearances: number,
+  trophies_count: number,
+): Player {
+  return {
+    id,
+    name,
+    team_id,
+    goals,
+    assists,
+    appearances,
+    trophies_count,
+    player_elo: calculatePlayerElo(goals, assists, trophies_count, appearances),
+  };
+}
+
+const players: Player[] = [
+  makePlayer('kane', 'Kane', 'bayern', 24, 10, 34, 2),
+  makePlayer('olise', 'Olise', 'bayern', 14, 13, 33, 1),
+  makePlayer('mbappe', 'Mbappé', 'realmadrid', 17, 7, 30, 1),
+  makePlayer('rice', 'Rice', 'arsenal', 8, 12, 35, 2),
+  makePlayer('dembele', 'Dembélé', 'psg', 11, 10, 29, 1),
+  makePlayer('yamal', 'Yamal', 'barcelona', 9, 11, 31, 1),
+  makePlayer('kimmich', 'Kimmich', 'bayern', 6, 9, 30, 2),
+  makePlayer('haaland', 'Haaland', 'mancity', 5, 3, 18, 0),
+].sort((a, b) => b.player_elo - a.player_elo);
+
 function TeamMark({ team, compact = false }: { team: Team; compact?: boolean }) {
   return (
     <span className={`flex shrink-0 items-center justify-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--secondary))] font-data font-medium text-[hsl(var(--secondary-foreground))] ${compact ? 'h-8 w-8 text-[9px]' : 'h-10 w-10 text-[10px]'}`} data-testid={`team-mark-${team.id}`}>
@@ -476,6 +522,85 @@ function Rankings() {
   );
 }
 
+function PlayerRankingsTable() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card)/.58)]" data-testid="table-player-rankings">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] border-collapse text-left">
+          <thead>
+            <tr className="border-b border-[hsl(var(--border))] text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">
+              <th scope="col" className="w-20 px-4 py-3 text-center sm:px-6">Rank</th>
+              <th scope="col" className="px-4 py-3 sm:px-6">Player</th>
+              <th scope="col" className="px-4 py-3 sm:px-6">Team</th>
+              <th scope="col" className="px-4 py-3 text-right">Goals</th>
+              <th scope="col" className="px-4 py-3 text-right">Assists</th>
+              <th scope="col" className="px-4 py-3 text-right">Apps</th>
+              <th scope="col" className="px-4 py-3 text-right">Trophies</th>
+              <th scope="col" className="px-4 py-3 text-right sm:px-6">Player Elo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((player, index) => {
+              const team = teamById[player.team_id];
+              return (
+                <tr key={player.id} className="border-b border-[hsl(var(--border))] last:border-b-0" data-testid={`player-ranking-row-${player.id}`}>
+                  <td className={`px-4 py-4 text-center font-data text-sm ${index < 3 ? 'text-[hsl(var(--accent))]' : 'text-[hsl(var(--muted-foreground))]'} sm:px-6`} data-testid={`player-ranking-position-${player.id}`}>{index + 1}</td>
+                  <td className="px-4 py-4 sm:px-6"><p className="font-semibold">{player.name}</p><p className="mt-1 font-data text-[10px] text-[hsl(var(--muted-foreground))]">{player.appearances} appearances</p></td>
+                  <td className="px-4 py-4"><div className="flex items-center gap-2.5"><TeamMark team={team} compact /><span className="whitespace-nowrap text-sm text-[hsl(var(--muted-foreground))]">{team.name}</span></div></td>
+                  <td className="px-4 py-4 text-right font-data text-sm">{player.goals}</td>
+                  <td className="px-4 py-4 text-right font-data text-sm">{player.assists}</td>
+                  <td className="px-4 py-4 text-right font-data text-sm">{player.appearances}</td>
+                  <td className="px-4 py-4 text-right font-data text-sm">{player.trophies_count}</td>
+                  <td className="px-4 py-4 text-right font-data text-base font-medium sm:px-6" data-testid={`player-ranking-elo-${player.id}`}>{player.player_elo.toFixed(1)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Players() {
+  return (
+    <div className="page-grain min-h-[100dvh] bg-[hsl(var(--background))]">
+      <header className="border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/.92)] backdrop-blur-md">
+        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          <a href="/" className="flex items-center gap-3" data-testid="players-link-home">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><BarChart3 className="h-4.5 w-4.5" /></span>
+            <span><span className="block font-display text-xl leading-none tracking-[-.03em]">footy<span className="text-[hsl(var(--accent))]">elo</span></span><span className="mt-1 block font-data text-[8px] uppercase tracking-[.2em] text-[hsl(var(--muted-foreground))]">European football index</span></span>
+          </a>
+          <nav className="flex items-center gap-5 sm:gap-7" aria-label="Primary navigation">
+            <a href="/" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="players-link-dashboard">Dashboard</a>
+            <a href="/rankings" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="players-link-rankings">Teams</a>
+            <a href="/players" className="text-xs font-semibold text-[hsl(var(--foreground))]" aria-current="page" data-testid="players-link-current">Players</a>
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-[1440px] px-5 pb-16 sm:px-8 lg:px-12">
+        <section className="max-w-3xl py-12 sm:py-16 lg:py-20">
+          <div className="mb-5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--accent))]"><Trophy className="h-3.5 w-3.5" /> Player index</div>
+          <h1 className="font-display text-5xl leading-[.96] tracking-[-.045em] sm:text-7xl" data-testid="heading-player-rankings">Players,<br /><span className="text-[hsl(var(--accent))]">put in order.</span></h1>
+          <p className="mt-7 max-w-2xl text-base leading-7 text-[hsl(var(--muted-foreground))] sm:text-lg">A transparent player rating built from goals, assists, appearances, and trophies. Every player is ranked against the same starting baseline.</p>
+        </section>
+
+        <section aria-labelledby="player-rankings-heading" data-testid="section-player-rankings">
+          <div className="mb-5 flex items-end justify-between">
+            <div><p className="mb-2 font-data text-[10px] uppercase tracking-[.2em] text-[hsl(var(--accent))]">Player leaderboard</p><h2 id="player-rankings-heading" className="font-display text-3xl tracking-[-.035em] sm:text-4xl">Player Rankings</h2></div>
+            <span className="hidden items-center gap-2 text-xs text-[hsl(var(--muted-foreground))] sm:flex"><LineChart className="h-3.5 w-3.5" /> {players.length} players indexed</span>
+          </div>
+          <PlayerRankingsTable />
+          <div className="mt-4 flex items-start gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-3 text-[11px] leading-5 text-[hsl(var(--muted-foreground))]" data-testid="player-rankings-note"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(var(--accent))]" /> Player Elo = 1500 + (goals × 8) + (assists × 5) + (trophies × 15) + (appearances × 0.5).</div>
+        </section>
+      </main>
+
+      <footer className="border-t border-[hsl(var(--border))]"><div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-6 text-[11px] text-[hsl(var(--muted-foreground))] sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12"><span className="font-display text-lg text-[hsl(var(--foreground))]">footy<span className="text-[hsl(var(--accent))]">elo</span></span><span>Built for the curious fan · Model snapshot 14 Aug 2026</span><a href="/" className="flex items-center gap-1 font-semibold text-[hsl(var(--foreground))] hover:text-[hsl(var(--accent))]" data-testid="players-link-footer-dashboard">Back to dashboard <ArrowUpRight className="h-3.5 w-3.5" /></a></div></footer>
+    </div>
+  );
+}
+
 function Home() {
   const [activeLeague, setActiveLeague] = useState('all');
   const [showAllFixtures, setShowAllFixtures] = useState(false);
@@ -495,13 +620,14 @@ function Home() {
           <nav className="hidden items-center gap-7 md:flex" aria-label="Primary navigation">
             <a href="#fixtures" className="text-xs font-semibold text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--accent))]" data-testid="link-fixtures">Fixtures</a>
             <a href="/rankings" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="link-rankings">Rankings</a>
+            <a href="/players" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="link-players">Players</a>
             <a href="#methodology" className="text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]" data-testid="link-methodology">Methodology</a>
           </nav>
           <button type="button" className="rounded-md p-2 md:hidden" onClick={() => setMobileNavOpen((value) => !value)} aria-label="Toggle navigation" data-testid="button-toggle-navigation">
             {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
-         {mobileNavOpen && <nav className="border-t border-[hsl(var(--border))] px-5 py-3 md:hidden" aria-label="Mobile navigation"><div className="flex gap-5"><a href="#fixtures" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold" data-testid="mobile-link-fixtures">Fixtures</a><a href="/rankings" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-rankings">Rankings</a><a href="#methodology" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-methodology">Methodology</a></div></nav>}
+         {mobileNavOpen && <nav className="border-t border-[hsl(var(--border))] px-5 py-3 md:hidden" aria-label="Mobile navigation"><div className="flex gap-5"><a href="#fixtures" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold" data-testid="mobile-link-fixtures">Fixtures</a><a href="/rankings" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-rankings">Rankings</a><a href="/players" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-players">Players</a><a href="#methodology" onClick={() => setMobileNavOpen(false)} className="py-1 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="mobile-link-methodology">Methodology</a></div></nav>}
       </header>
 
       <main className="mx-auto max-w-[1440px] px-5 pb-16 sm:px-8 lg:px-12">
@@ -553,5 +679,6 @@ function Home() {
 }
 
 export default function App() {
+  if (window.location.pathname === '/players') return <Players />;
   return window.location.pathname === '/rankings' ? <Rankings /> : <Home />;
 }
