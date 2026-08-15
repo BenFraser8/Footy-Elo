@@ -481,7 +481,7 @@ function Home() {
   const [showAllFixtures, setShowAllFixtures] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const filteredMatches = useMemo(() => activeLeague === 'all' ? matches : matches.filter((match) => match.leagueId === activeLeague), [activeLeague]);
-  const filteredTeams = useMemo(() => [...coreTeams].filter((team) => activeLeague === 'all' || team.leagueId === activeLeague).sort((a, b) => b.rating - a.rating), [activeLeague]);
+  const filteredTeams = useMemo(() => [...teams].filter((team) => activeLeague === 'all' || team.leagueId === activeLeague).sort((a, b) => b.rating - a.rating), [activeLeague]);
   const visibleMatches = showAllFixtures ? filteredMatches : filteredMatches.slice(0, 5);
 
   return (
