@@ -15,9 +15,13 @@ const teams = [
   { id: 'monaco', name: 'AS Monaco', shortName: 'ASM', league: 'Ligue 1', leagueId: 'ligue1', startingRating: 1500, isCore: false },
   { id: 'manutd', name: 'Manchester United', shortName: 'MUN', league: 'Premier League', leagueId: 'pl', startingRating: 1500, isCore: false },
   { id: 'fiorentina', name: 'Fiorentina', shortName: 'FIO', league: 'Serie A', leagueId: 'seriea', startingRating: 1500, isCore: false },
-  // additional teams (truncated for brevity)
   { id: 'chelsea', name: 'Chelsea', shortName: 'CHE', league: 'Premier League', leagueId: 'pl', startingRating: 1485, isCore: false },
   { id: 'tottenham', name: 'Tottenham Hotspur', shortName: 'TOT', league: 'Premier League', leagueId: 'pl', startingRating: 1475, isCore: false },
+  { id: 'stuttgart', name: 'VfB Stuttgart', shortName: 'VFB', league: 'Bundesliga', leagueId: 'bundesliga', startingRating: 1500 /* +30 adjustment */, isCore: false },
+  { id: 'leverkusen', name: 'Bayer Leverkusen', shortName: 'LEV', league: 'Bundesliga', leagueId: 'bundesliga', startingRating: 1500, isCore: false },
+  { id: 'leipzig', name: 'RB Leipzig', shortName: 'RBL', league: 'Bundesliga', leagueId: 'bundesliga', startingRating: 1490, isCore: false },
+  { id: 'inter', name: 'Inter Milan', shortName: 'INT', league: 'Serie A', leagueId: 'seriea', startingRating: 1490, isCore: false },
+  { id: 'marseille', name: 'Marseille', shortName: 'OM', league: 'Ligue 1', leagueId: 'ligue1', startingRating: 1490, isCore: false },
   { id: 'ajax', name: 'Ajax', shortName: 'AJA', league: 'Other', leagueId: 'other', startingRating: 1450, isCore: false },
 ];
 
